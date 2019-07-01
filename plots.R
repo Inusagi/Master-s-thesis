@@ -18,7 +18,8 @@ pvalue <- function(x,n){
   return(ret)
 }
 
-# prediction plots, data1 and data2 = dataframes from inference.R. 
+# prediction plots, 
+# data1 and data2 = dataframes from inference.R, 
 # scale: how much of y-values are seen. i or j = which prediction point (a number from 1-5)
 plotPredictionCentralized12 <-function(data1, data2, scale, i){
   N <- 100
@@ -43,6 +44,9 @@ plotPredictionCentralized12 <-function(data1, data2, scale, i){
   
 }
 
+# coverage plots, 
+# data1 and data2 = dataframes from inference.R, 
+# scale: how much of y-values are seen. i or j = which prediction point (a number from 1-5)
 plotPredictionCoverage12 <-function(data1, data2, scale, i){
   N <- 100
   len.pred <- 5
@@ -62,7 +66,11 @@ plotPredictionCoverage12 <-function(data1, data2, scale, i){
   points(1:N, data1[[sprintf("Observations.%d",i)]]-prediction.mean.multiple, col = "red", pch = 4)
 }
 
+# boxplots, 
+# data1 and data2 = dataframes from inference.R, 
+# scale: how much of y-values are seen. 
 # j for plotBox can only obtain value 1 or 2, for interpolation points and extrapolation points respectively.
+# accuracyMeasure "CRPS" or "MSE" or "CI"
 plotBox12 <- function(data1, data2, accuracyMeasure, scale, j){
   len.pred <- 5
   accuracy.measure.single <- accuracy.measure.1 <- accuracy.measure.2 <-
@@ -92,6 +100,10 @@ plotBox12 <- function(data1, data2, accuracyMeasure, scale, j){
   }
 }
 
+# prediction plots, 
+# data1 and data2 = dataframes from inference.R, 
+# scale: how much of y-values are seen. i or j = which prediction point (a number from 1-5)
+# accuracyMeasure "CRPS" or "MSE" or "CI"
 plotBoxVObs12 <- function(data1, data2, accuracyMeasure, scale, j){
   len.pred <- 5
   pred.x <- c(1,2,3,6,8)
@@ -115,114 +127,4 @@ plotBoxVObs12 <- function(data1, data2, accuracyMeasure, scale, j){
           border = rep(c("cornflowerblue", "limegreen", "black"), times = 6), names = floor(seq(1,6.7,1/3)), 
           xlab = "Case", ylim = c(0, yBound))
   
-}
-
-printCoverageColSum12 <- function(data1, data2){
-  N <- 100
-  tableSingle <- table1 <- table2 <- matrix(rep(0, 5*N), nrow = N)
-  for (i in 1:5){
-    tableSingle[,i] <- data1[[sprintf("Coverage.single.%d", i)]][1:N]
-    table1[,i] <- data1[[sprintf("Coverage.multiple.%d", i)]][1:N]
-    table2[,i] <- data2[[sprintf("Coverage.multiple.%d", i)]][1:N]
-  }
-  ps <- sum(tableSingle)/500
-  p1 <- sum(table1)/500
-  p2 <- sum(table2)/500
-  single <- c(colSums(tableSingle)/100, ps, ps-1.96*sqrt(ps*(1-ps)/500), ps+1.96*sqrt(ps*(1-ps)/500), pvalue(ps*500, 500))
-  model1 <- c(colSums(table1)/100, p1, p1-1.96*sqrt(p1*(1-p1)/500), p1+1.96*sqrt(p1*(1-p1)/500), pvalue(p1*500, 500))
-  model2 <- c(colSums(table2)/100, p2, p2-1.96*sqrt(p2*(1-p2)/500), p2+1.96*sqrt(p2*(1-p2)/500), pvalue(p2*500, 500))
-  print("Coverage for individual model")
-  print(round(100*single,1))
-  print("Coverage for model 1")
-  print(round(100*model1,1))
-  print("Coverage for model 2")
-  print(round(100*model2,1))
-}
-
-printCoverageVobs12 <- function(data1, data2, print1, print2){
-  nDigits <- function(x) nchar( trunc( abs(x) ) )
-  hspace <- function(x)if (nDigits(x) == 3) return(3) else return (5)
-  N <- 100
-  tableSingle <- table1 <- table2 <- matrix(rep(0, 5*N), nrow = N)
-  for (i in 1:5){
-    tableSingle[,i] <- data1[[sprintf("Coverage.single.%d", i)]]
-    table1[,i] <- data1[[sprintf("Coverage.multiple.%d", i)]]
-    table2[,i] <- data2[[sprintf("Coverage.multiple.%d", i)]]
-  }
-  
-  single <- matrix(rep(0, 6*12), nrow = 6)
-  model1 <- matrix(rep(0, 6*12), nrow = 6)
-  model2 <- matrix(rep(0, 6*12), nrow = 6)
-  single[1,1:5] <- colSums(tableSingle[1:50,])/50
-  model1[1,1:5] <- colSums(table1[1:50,])/50
-  model2[1,1:5] <- colSums(table2[1:50,])/50
-  for (i in 2:6) {
-    single[i,1:5] <- colSums(tableSingle[(31+i*10):(40+i*10),])/10
-    model1[i,1:5] <- colSums(table1[(31+i*10):(40+i*10),])/10
-    model2[i,1:5] <- colSums(table2[(31+i*10):(40+i*10),])/10
-  }
-  
-  single[,6] <- rowSums(single[,1:5])/5
-  model1[,6] <- rowSums(model1[,1:5])/5
-  model2[,6] <- rowSums(model2[,1:5])/5
-  mixed <- c(50,10,10,10,10,10)
-  for (i in 1:5) {
-    single[,i+6] <- pvalue(single[,i]*mixed,mixed)
-    model1[,i+6] <- pvalue(model1[,i]*mixed,mixed)
-    model2[,i+6] <- pvalue(model2[,i]*mixed,mixed)
-  }
-  single[,12] <- pvalue(single[,6]*mixed*5,mixed*5)
-  model1[,12] <- pvalue(model1[,6]*mixed*5,mixed*5)
-  model2[,12] <- pvalue(model2[,6]*mixed*5,mixed*5)
-  # CI.single <- CI.model1 <- CI.model2 <- matrix(rep(0,times=6*2), nrow = 6)
-  # CI.single[,1] <- single[,6] - 1.96*sqrt(single[,6]*(1-single[,6])/c(250,50,50,50,50,50))
-  # CI.model1[,1] <- model1[,6] - 1.96*sqrt(model1[,6]*(1-model1[,6])/c(250,50,50,50,50,50))
-  # CI.model2[,1] <- model2[,6] - 1.96*sqrt(model2[,6]*(1-model2[,6])/c(250,50,50,50,50,50))
-  # CI.single[,2] <- single[,6] + 1.96*sqrt(single[,6]*(1-single[,6])/c(250,50,50,50,50,50))
-  # CI.model1[,2] <- model1[,6] + 1.96*sqrt(model1[,6]*(1-model1[,6])/c(250,50,50,50,50,50))
-  # CI.model2[,2] <- model2[,6] + 1.96*sqrt(model2[,6]*(1-model2[,6])/c(250,50,50,50,50,50))
-  # single <- cbind(single, CI.single, pvalue(single[,6]*c(250,50,50,50,50,50),c(250,50,50,50,50,50)))
-  # model1 <- cbind(model1, CI.model1, pvalue(model1[,6]*c(250,50,50,50,50,50),c(250,50,50,50,50,50)))
-  # model2 <- cbind(model2, CI.model2, pvalue(model2[,6]*c(250,50,50,50,50,50),c(250,50,50,50,50,50)))
-  print("Coverage table")
-  for (i in 1:6) {
-    cat(sprintf("%d & 
-                %01d\\hspace{%dmm}(%01d) & %01d\\hspace{%dmm}(%01d) & 
-                %01d\\hspace{%dmm}(%01d) & %01d\\hspace{%dmm}(%01d) &
-                %01d\\hspace{%dmm}(%01d) & %01d\\hspace{%dmm}(%01d)", i,
-                round(100*single[i,print1]), hspace(round(100*single[i,print1])), round(100*single[i,print1+6]),
-                round(100*single[i,print2]), hspace(round(100*single[i,print2])), round(100*single[i,print2+6]),
-                round(100*model1[i,print1]), hspace(round(100*model1[i,print1])), round(100*model1[i,print1+6]),
-                round(100*model1[i,print2]), hspace(round(100*model1[i,print2])), round(100*model1[i,print2+6]),
-                round(100*model2[i,print1]), hspace(round(100*model2[i,print1])), round(100*model2[i,print1+6]), 
-                round(100*model2[i,print2]), hspace(round(100*model2[i,print2])), round(100*model2[i,print2+6])))
-    cat("\\\\ \\hline \n")
-                }
-}
-
-getCoverageIndividual <- function(data){
-  N <- 100
-  tableSingle <- matrix(rep(0, 5*N), nrow = N)
-  for (i in 1:5){
-    tableSingle[,i] <- data[[sprintf("Coverage.single.%d", i)]][1:N]
-  }
-  single <- c(colSums(tableSingle)/100, sum(tableSingle)/500)
-  return(single)
-}
-
-getCoverageMultipleMd <- function(data){
-  N <- 100
-  tableMultiple <- matrix(rep(0, 5*N), nrow = N)
-  for (i in 1:5){
-    tableMultiple[,i] <- data[[sprintf("Coverage.multiple.%d", i)]][1:N]
-  }
-  
-  model2 <- matrix(rep(0, 6*6), nrow = 6)
-  model2[1,1:5] <- colSums(tableMultiple[1:50,])/50
-  for (i in 2:6) {
-    model2[i,1:5] <- colSums(tableMultiple[(31+i*10):(40+i*10),])/10
-  }
-  model2[,6] <- rowSums(model2[,1:5])/5
-  model2 <- cbind(model2, pvalue(model2[,6]*c(250,50,50,50,50,50),c(250,50,50,50,50,50)))
-  return(model2)
 }
